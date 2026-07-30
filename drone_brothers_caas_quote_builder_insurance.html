@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drone Brothers CaaS — Quote Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161c; --panel:#1a2129; --panel-2:#1f2833; --line:#2b3542;
+    --text:#eef1f4; --muted:#8b98a8; --muted-2:#5f6c7a;
+    --record:#4f8fc0; --record-dim:#2c4256;
+    --twin:#e8621c; --twin-dim:#4a2c17;
+    --green:#5fae7c; --warn:#d9666c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:32px 24px 60px;}
+  .wrap{max-width:1220px;margin:0 auto;}
+  .stamp-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:2px solid var(--line);padding-bottom:16px;margin-bottom:28px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted-2);text-transform:uppercase;}
+  h1{font-family:'Oswald',sans-serif;font-weight:600;font-size:28px;letter-spacing:0.5px;margin:4px 0 0;text-transform:uppercase;}
+  .sub{color:var(--muted);font-size:13px;max-width:560px;line-height:1.5;}
+  .ticket-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);text-align:right;}
+
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+  @media (max-width:960px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;}
+  .panel + .panel{margin-top:20px;}
+  .panel h2{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .panel h2 .badge{float:right;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted-2);}
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .field{margin-bottom:16px;}
+  input[type=number], select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:14px;}
+  input[type=number]:focus, select:focus{outline:2px solid var(--record);outline-offset:1px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .checkline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:12px;}
+  .checkline input{accent-color:var(--twin);width:15px;height:15px;}
+
+  .gauge-track{position:relative;height:6px;background:var(--panel-2);border-radius:3px;margin:18px 4px 8px;}
+  .ghost-mark{position:absolute;top:-10px;width:2px;height:26px;background:var(--muted-2);}
+  .ghost-label{position:absolute;top:-26px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted-2);white-space:nowrap;transform:translateX(-50%);}
+  input[type=range]{width:100%;accent-color:var(--record);margin-top:2px;}
+  .gauge-readout{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px;}
+  .gauge-readout b{color:var(--text);font-size:15px;}
+
+  .toggle-btn{background:none;border:1px solid var(--line);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:4px;cursor:pointer;width:100%;text-align:left;}
+  .toggle-btn:hover{border-color:var(--muted-2);color:var(--text);}
+  .advanced{display:none;margin-top:14px;}
+  .advanced.open{display:block;}
+
+  /* Tickets */
+  .tickets{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:760px){.tickets{grid-template-columns:1fr;}}
+  .ticket{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .ticket-head{padding:16px 18px;border-bottom:1px dashed var(--line);}
+  .ticket.record .ticket-head{background:linear-gradient(180deg,var(--record-dim),transparent);}
+  .ticket.twin .ticket-head{background:linear-gradient(180deg,var(--twin-dim),transparent);}
+  .pkg-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:3px;display:inline-block;margin-bottom:8px;}
+  .ticket.record .pkg-tag{background:rgba(79,143,192,0.18);color:var(--record);}
+  .ticket.twin .pkg-tag{background:rgba(232,98,28,0.18);color:var(--twin);}
+  .ticket-head h3{font-family:'Oswald',sans-serif;font-size:20px;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;}
+  .ticket-head p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;}
+  .tier-note{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);margin-top:8px;}
+
+  .ticket-body{padding:14px 18px;}
+  .line{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--panel-2);color:var(--muted);}
+  .line span:last-child{font-family:'JetBrains Mono',monospace;color:var(--text);}
+  .line.total{border-top:2px solid var(--line);border-bottom:none;margin-top:8px;padding-top:12px;}
+  .line.total span:first-child{color:var(--text);font-weight:600;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:0.5px;font-size:12px;}
+  .line.total span:last-child{font-size:22px;font-weight:700;}
+  .ticket.record .line.total span:last-child{color:var(--record);}
+  .ticket.twin .line.total span:last-child{color:var(--twin);}
+  .monthly{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);text-align:right;padding:0 18px 14px;}
+  .tear{height:12px;background:repeating-linear-gradient(90deg,var(--bg) 0 8px,var(--panel) 8px 16px);}
+
+  /* Cost check */
+  .costcheck{margin-top:20px;}
+  .cc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:760px){.cc-grid{grid-template-columns:1fr;}}
+  .cc-box{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:14px;}
+  .cc-box h4{margin:0 0 10px;font-family:'Oswald',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+  .cc-stat{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:var(--muted);}
+  .cc-stat span:last-child{font-family:'JetBrains Mono',monospace;color:var(--text);}
+  .margin-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;margin-top:6px;}
+  .margin-good{background:rgba(95,174,122,0.18);color:var(--green);}
+  .margin-warn{background:rgba(217,102,108,0.18);color:var(--warn);}
+  .wage-callout{margin-top:8px;font-size:11px;color:var(--green);line-height:1.5;}
+
+  /* Comparison table */
+  .compare-table{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:12px 14px;background:var(--panel-2);border-bottom:1px solid var(--line);}
+  td{padding:12px 14px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--panel-2);vertical-align:top;}
+  td.num{font-family:'JetBrains Mono',monospace;color:var(--text);white-space:nowrap;}
+  tr.us td{background:rgba(79,143,192,0.06);}
+  tr.us-twin td{background:rgba(232,98,28,0.06);}
+  tr.us td:first-child, tr.us-twin td:first-child{font-weight:600;color:var(--text);}
+  .note-cell{font-size:11px;color:var(--muted-2);line-height:1.5;}
+  .savings{color:var(--green);font-weight:700;}
+
+  .footnote{margin-top:24px;font-size:11px;color:var(--muted-2);line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+  .footnote b{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="stamp-row">
+    <div>
+      <div class="eyebrow">Drone Brothers CaaS · Internal Quoting Tool</div>
+      <h1>Capture-as-a-Service Quote Builder</h1>
+      <div class="sub">Priced against the market, not against our own labor cost. We pay capture staff to do it right — that's the differentiator, and the margin exists to fund it.</div>
+    </div>
+    <div class="ticket-id" id="ticketId">FIELD TICKET · —</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- INPUTS -->
+    <div>
+      <div class="panel">
+        <h2>Project Composite</h2>
+        <div class="field">
+          <label for="sqft">Total square footage</label>
+          <input type="number" id="sqft" value="700000" min="0" step="1000">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="floors">Levels / floors</label>
+            <input type="number" id="floors" value="5" min="1" step="1">
+          </div>
+          <div class="field">
+            <label for="months">Duration (months)</label>
+            <input type="number" id="months" value="10" min="1" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Add-Ons <span class="badge">CUSTOMER-FACING</span></h2>
+        <div class="field">
+          <label for="mobFee">Mobilization / site setup, $ (one-time)</label>
+          <input type="number" id="mobFee" value="750" min="0" step="50">
+        </div>
+        <div class="checkline">
+          <input type="checkbox" id="qaToggle" checked>
+          <label for="qaToggle" style="margin:0;">Include QA &amp; Reporting Tier</label>
+        </div>
+        <div class="field">
+          <label for="qaFee">QA &amp; reporting fee, $ (program total)</label>
+          <input type="number" id="qaFee" value="1500" min="0" step="50">
+        </div>
+        <div class="checkline">
+          <input type="checkbox" id="archiveToggle">
+          <label for="archiveToggle" style="margin:0;">Include Extended Archive Access (post-completion)</label>
+        </div>
+        <div class="field">
+          <label for="archiveFee">Archive access, $ / year after handoff</label>
+          <input type="number" id="archiveFee" value="1800" min="0" step="50">
+        </div>
+      </div>
+
+      <div class="panel costcheck">
+        <h2>Internal Cost Check <span class="badge">NOT SHOWN TO CLIENT</span></h2>
+        <button class="toggle-btn" id="advToggle">▸ Show capture rate, wages &amp; internal costs</button>
+        <div class="advanced" id="advPanel">
+          <label for="rateSlider" style="margin-top:12px;">Planning capture rate</label>
+          <input type="range" id="rateSlider" min="20000" max="150000" step="1000" value="90000">
+          <div class="gauge-track">
+            <div class="ghost-mark" id="ghostMark"></div>
+            <div class="ghost-label" id="ghostLabel">OpenSpace benchmark, 150,000/hr</div>
+          </div>
+          <div class="gauge-readout">
+            <span>20,000</span><span><b id="rateReadout">90,000</b> sf/hr</span><span>150,000</span>
+          </div>
+          <div class="row2" style="margin-top:14px;">
+            <div class="field">
+              <label for="laborRate">Base capture wage, $/hr</label>
+              <input type="number" id="laborRate" value="70" min="0" step="1">
+            </div>
+            <div class="field">
+              <label for="targetMargin">Target gross margin, %</label>
+              <input type="number" id="targetMargin" value="55" min="0" max="95" step="1">
+            </div>
+          </div>
+          <div class="field">
+            <label for="hostCost">Record hosting, $/mo</label>
+            <input type="number" id="hostCost" value="75" min="0" step="5">
+          </div>
+          <div class="field">
+            <label for="platformCost">Twin platform license, $/mo</label>
+            <input type="number" id="platformCost" value="1000" min="0" step="50">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div>
+      <div class="tickets">
+        <div class="ticket record">
+          <div class="ticket-head">
+            <div class="pkg-tag">Package 01</div>
+            <h3>Build Record</h3>
+            <p>Weekly 360° walkthrough, dated and organized by level. Chronological archive, no spatial navigation.</p>
+            <div class="tier-note" id="r-tier">Tier: —</div>
+          </div>
+          <div class="ticket-body">
+            <div class="line"><span>Base program (SF tier price)</span><span id="r-base">—</span></div>
+            <div class="line"><span>Mobilization / setup</span><span id="r-mob">—</span></div>
+            <div class="line"><span>QA &amp; reporting tier</span><span id="r-qa">—</span></div>
+            <div class="line total"><span>Program price</span><span id="r-price">—</span></div>
+          </div>
+          <div class="tear"></div>
+          <div class="monthly" id="r-monthly">— / month</div>
+        </div>
+
+        <div class="ticket twin">
+          <div class="ticket-head">
+            <div class="pkg-tag">Package 02</div>
+            <h3>Build Twin</h3>
+            <p>Same weekly walk, pinned to the composite via OpenSpace / DroneDeploy / Cupix. Spatial, searchable record.</p>
+            <div class="tier-note" id="t-tier">Tier: —</div>
+          </div>
+          <div class="ticket-body">
+            <div class="line"><span>Base program (SF tier price)</span><span id="t-base">—</span></div>
+            <div class="line"><span>Mobilization / setup</span><span id="t-mob">—</span></div>
+            <div class="line"><span>QA &amp; reporting tier</span><span id="t-qa">—</span></div>
+            <div class="line total"><span>Program price</span><span id="t-price">—</span></div>
+          </div>
+          <div class="tear"></div>
+          <div class="monthly" id="t-monthly">— / month</div>
+        </div>
+      </div>
+      <div class="footnote" id="archiveLine" style="display:none;margin-top:12px;">
+        <b>Extended archive access:</b> <span id="archiveOut">—</span> billed annually after project handoff, independent of program price above.
+      </div>
+
+      <!-- Cost check readout -->
+      <div class="panel costcheck">
+        <h2>Margin &amp; Wage Headroom</h2>
+        <div class="cc-grid">
+          <div class="cc-box">
+            <h4>Build Record</h4>
+            <div class="cc-stat"><span>Capture hours (program)</span><span id="r-hours">—</span></div>
+            <div class="cc-stat"><span>Internal cost (labor + hosting + setup)</span><span id="r-internal">—</span></div>
+            <div class="cc-stat"><span>Gross margin at quoted price</span><span id="r-marginval">—</span></div>
+            <span class="margin-pill" id="r-marginpill">—</span>
+            <div class="wage-callout" id="r-wage">—</div>
+          </div>
+          <div class="cc-box">
+            <h4>Build Twin</h4>
+            <div class="cc-stat"><span>Capture hours (program)</span><span id="t-hours">—</span></div>
+            <div class="cc-stat"><span>Internal cost (labor + platform + setup)</span><span id="t-internal">—</span></div>
+            <div class="cc-stat"><span>Gross margin at quoted price</span><span id="t-marginval">—</span></div>
+            <span class="margin-pill" id="t-marginpill">—</span>
+            <div class="wage-callout" id="t-wage">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market comparison -->
+      <div class="compare-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Pricing basis</th>
+              <th>Est. cost, this project</th>
+              <th>vs. Drone Brothers CaaS</th>
+            </tr>
+          </thead>
+          <tbody id="compareBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footnote">
+        <b>How to read this table:</b> Matterport, Multivista and Twindo figures are computed against this project's size and duration using their published rate bands, applied at our own monthly comprehensive-sweep cadence. DocuSketch and iGUIDE price per property or per project, not by square footage or recurring commercial cadence, so their published unit price is shown for reference rather than scaled, they are not structured to serve a project like this one.<br>
+        <b>Note:</b> capture rate in the cost-check panel uses Drone Brothers CaaS planning benchmarks (a real-world staffing estimate), not the OpenSpace 150,000 sf/hr marketing figure. The customer-facing price above is set from square-foot tiers benchmarked to the market, not from labor hours, capture speed should never make the deliverable look cheaper.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+function fmtNum(n){ return Math.round(n).toLocaleString('en-US'); }
+const el = id => document.getElementById(id);
+
+// Drone Brothers CaaS SF tier pricing ($/SF, full program) — priced under market, above commodity labor cost
+const recordTiers = [
+  {max:25000,   rate:0.22, label:'Up to 25,000 SF'},
+  {max:75000,   rate:0.19, label:'25,001–75,000 SF'},
+  {max:150000,  rate:0.16, label:'75,001–150,000 SF'},
+  {max:300000,  rate:0.14, label:'150,001–300,000 SF'},
+  {max:750000,  rate:0.12, label:'300,001–750,000 SF'},
+  {max:Infinity,rate:0.10, label:'Above 750,000 SF (custom review)'}
+];
+const twinTiers = [
+  {max:25000,   rate:0.34, label:'Up to 25,000 SF'},
+  {max:75000,   rate:0.30, label:'25,001–75,000 SF'},
+  {max:150000,  rate:0.26, label:'75,001–150,000 SF'},
+  {max:300000,  rate:0.23, label:'150,001–300,000 SF'},
+  {max:750000,  rate:0.20, label:'300,001–750,000 SF'},
+  {max:Infinity,rate:0.17, label:'Above 750,000 SF (custom review)'}
+];
+function getTier(sqft, tiers){
+  for(const t of tiers){ if(sqft <= t.max) return t; }
+  return tiers[tiers.length-1];
+}
+
+function positionGhost(){
+  const slider = el('rateSlider');
+  const min = +slider.min, max = +slider.max, val = 150000;
+  const pct = ((val-min)/(max-min))*100;
+  el('ghostMark').style.left = pct + '%';
+  el('ghostLabel').style.left = pct + '%';
+}
+
+el('envSliderListener');
+el('rateSlider').addEventListener('input', calculate);
+el('advToggle').addEventListener('click', () => {
+  const p = el('advPanel');
+  p.classList.toggle('open');
+  el('advToggle').textContent = (p.classList.contains('open') ? '▾ Hide' : '▸ Show') + ' capture rate, wages & internal costs';
+});
+
+const inputs = ['sqft','floors','months','mobFee','qaFee','archiveFee','laborRate','targetMargin','hostCost','platformCost'];
+inputs.forEach(id => el(id).addEventListener('input', calculate));
+['qaToggle','archiveToggle'].forEach(id => el(id).addEventListener('change', calculate));
+
+function marginPillClass(m){ return m >= 40 ? 'margin-good' : 'margin-warn'; }
+
+function calculate(){
+  const sqft = +el('sqft').value || 0;
+  const floors = Math.max(1, +el('floors').value || 1);
+  const months = Math.max(1, +el('months').value || 1);
+  const mobFee = +el('mobFee').value || 0;
+  const qaOn = el('qaToggle').checked;
+  const qaFee = qaOn ? (+el('qaFee').value || 0) : 0;
+  const archiveOn = el('archiveToggle').checked;
+  const archiveFee = +el('archiveFee').value || 0;
+
+  const rate = +el('rateSlider').value || 1;
+  const laborRate = +el('laborRate').value || 0;
+  const targetMargin = (+el('targetMargin').value || 0) / 100;
+  const hostCost = +el('hostCost').value || 0;
+  const platformCost = +el('platformCost').value || 0;
+
+  el('rateReadout').textContent = fmtNum(rate);
+
+  // ---- Customer-facing price: SF tier based ----
+  const rTier = getTier(sqft, recordTiers);
+  const tTier = getTier(sqft, twinTiers);
+  const rBase = sqft * rTier.rate;
+  const tBase = sqft * tTier.rate;
+  const rPrice = rBase + mobFee + qaFee;
+  const tPrice = tBase + mobFee + qaFee;
+
+  el('r-tier').textContent = 'Tier: ' + rTier.label + '  ·  $' + rTier.rate.toFixed(2) + '/SF';
+  el('t-tier').textContent = 'Tier: ' + tTier.label + '  ·  $' + tTier.rate.toFixed(2) + '/SF';
+  el('r-base').textContent = fmt(rBase);
+  el('t-base').textContent = fmt(tBase);
+  el('r-mob').textContent = fmt(mobFee);
+  el('t-mob').textContent = fmt(mobFee);
+  el('r-qa').textContent = qaOn ? fmt(qaFee) : 'Not included';
+  el('t-qa').textContent = qaOn ? fmt(qaFee) : 'Not included';
+  el('r-price').textContent = fmt(rPrice);
+  el('t-price').textContent = fmt(tPrice);
+  el('r-monthly').textContent = fmt(rPrice/months) + ' / month';
+  el('t-monthly').textContent = fmt(tPrice/months) + ' / month';
+
+  if(archiveOn){
+    el('archiveLine').style.display = 'block';
+    el('archiveOut').textContent = fmt(archiveFee) + ' / year';
+  } else {
+    el('archiveLine').style.display = 'none';
+  }
+
+  // ---- Internal cost check (background, not quoted) ----
+  const weeks = months * 4.33;
+  const comprehensiveSweeps = months;
+  const partialWalks = Math.max(0, weeks - comprehensiveSweeps);
+  const floorSize = sqft / floors;
+  const partialHours = floorSize / rate;
+  const comprehensiveHours = sqft / rate;
+  const totalHours = (partialWalks * partialHours) + (comprehensiveSweeps * comprehensiveHours);
+  const laborCost = totalHours * laborRate;
+
+  const rInternal = laborCost + (hostCost * months) + mobFee * 0 /*mob already covers overhead, kept out of margin base for now*/;
+  const rInternalFull = laborCost + (hostCost * months);
+  const tInternalFull = laborCost + (platformCost * months);
+
+  const rMargin = (rPrice - rInternalFull) / rPrice;
+  const tMargin = (tPrice - tInternalFull) / tPrice;
+
+  el('r-hours').textContent = fmtNum(totalHours) + ' hrs';
+  el('t-hours').textContent = fmtNum(totalHours) + ' hrs';
+  el('r-internal').textContent = fmt(rInternalFull);
+  el('t-internal').textContent = fmt(tInternalFull);
+  el('r-marginval').textContent = (rMargin*100).toFixed(1) + '%';
+  el('t-marginval').textContent = (tMargin*100).toFixed(1) + '%';
+
+  el('r-marginpill').className = 'margin-pill ' + marginPillClass(rMargin*100);
+  el('r-marginpill').textContent = rMargin*100 >= 40 ? 'HEALTHY MARGIN' : 'REVIEW PRICING';
+  el('t-marginpill').className = 'margin-pill ' + marginPillClass(tMargin*100);
+  el('t-marginpill').textContent = tMargin*100 >= 40 ? 'HEALTHY MARGIN' : 'REVIEW PRICING';
+
+  // Sustainable premium wage at target margin
+  const rWageBudget = (rPrice * (1-targetMargin)) - (hostCost*months);
+  const tWageBudget = (tPrice * (1-targetMargin)) - (platformCost*months);
+  const rMaxWage = totalHours > 0 ? rWageBudget/totalHours : 0;
+  const tMaxWage = totalHours > 0 ? tWageBudget/totalHours : 0;
+  el('r-wage').textContent = 'Sustainable capture wage at ' + (targetMargin*100).toFixed(0) + '% margin: up to ' + fmt(rMaxWage) + '/hr';
+  el('t-wage').textContent = 'Sustainable capture wage at ' + (targetMargin*100).toFixed(0) + '% margin: up to ' + fmt(tMaxWage) + '/hr';
+
+  // ---- Market comparison ----
+  function matterportRate(sf){
+    if(sf<=3000) return 281.5/Math.max(sf,1);
+    if(sf<=10000) return 612/sf;
+    if(sf<=30000) return 1343.5/sf;
+    return 0.06;
+  }
+  const matterportPass = sqft * matterportRate(sqft);
+  const matterportTotal = matterportPass * comprehensiveSweeps;
+  const multivistaTotal = sqft * 0.35;
+  const twindoTotal = sqft * 0.22;
+
+  const rows = [
+    {
+      name:'Matterport', basis:'Managed capture, $/SF tier, repeated monthly',
+      cost: matterportTotal,
+      note:'Priced per capture pass, no native weekly/monthly recurring plan at this cadence.'
+    },
+    {
+      name:'Multivista', basis:'Full-service documentation program, $/SF (historical benchmark)',
+      cost: multivistaTotal,
+      note:'Closest direct comparable to a recurring, full-program capture service.'
+    },
+    {
+      name:'Twindo (Canvas)', basis:'One-time 3D CAD/BIM modeling, $/SF',
+      cost: twindoTotal,
+      note:'One-time modeling deliverable, not a recurring weekly capture program.'
+    },
+    {
+      name:'DocuSketch', basis:'Per-property monthly plan ($379–$975/mo)',
+      cost: null,
+      note:'Built for small-to-mid property claims portfolios, not a single large recurring commercial build. Not scalable to this project.'
+    },
+    {
+      name:'iGUIDE', basis:'Per-project flat fee ($8–$46.50)',
+      cost: null,
+      note:'Single-visit real estate/insurance product. Not structured for multi-month recurring commercial capture.'
+    }
+  ];
+
+  const body = el('compareBody');
+  body.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const costCell = r.cost === null
+      ? '<span style="color:var(--muted-2)">N/A at this scale</span>'
+      : fmt(r.cost);
+    let deltaCell = '—';
+    if(r.cost !== null){
+      const savingsVsRecord = ((r.cost - rPrice)/r.cost*100);
+      deltaCell = '<span class="savings">' + Math.round(savingsVsRecord) + '% below on Build Record</span>';
+    }
+    tr.innerHTML = '<td>'+r.name+'</td><td class="note-cell">'+r.basis+'</td><td class="num">'+costCell+'</td><td class="note-cell">'+deltaCell+'<br>'+r.note+'</td>';
+    body.appendChild(tr);
+  });
+
+  // Our own rows pinned at bottom for reference
+  const usRecord = document.createElement('tr');
+  usRecord.className = 'us';
+  usRecord.innerHTML = '<td>Drone Brothers CaaS — Build Record</td><td class="note-cell">SF tier pricing, our program</td><td class="num">'+fmt(rPrice)+'</td><td class="note-cell">Quoted price</td>';
+  body.appendChild(usRecord);
+
+  const usTwin = document.createElement('tr');
+  usTwin.className = 'us-twin';
+  usTwin.innerHTML = '<td>Drone Brothers CaaS — Build Twin</td><td class="note-cell">SF tier pricing, our program</td><td class="num">'+fmt(tPrice)+'</td><td class="note-cell">Quoted price</td>';
+  body.appendChild(usTwin);
+
+  el('ticketId').textContent = 'FIELD TICKET · ' + fmtNum(sqft) + ' SF · ' + floors + ' LVL · ' + months + ' MO';
+}
+
+positionGhost();
+calculate();
+</script>
+</body>
+</html>
